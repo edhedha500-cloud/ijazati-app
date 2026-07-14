@@ -325,6 +325,14 @@ export const defaultLeaveTypes = [
   { id: 'bereavement', name: 'إجازة وفاة', deductFromBalance: false, color: '#6366F1' },
 ];
 
+export const getLeaveTypeById = (id, leaveTypes = defaultLeaveTypes) => {
+  return leaveTypes.find(t => t.id === id) || null;
+};
+
+export const getLeaveTypeByName = (name, leaveTypes = defaultLeaveTypes) => {
+  return leaveTypes.find(t => t.name === name) || null;
+};
+
 // ============================================
 // دوال التصدير
 // ============================================
