@@ -1,10 +1,15 @@
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, setMonth, setYear, differenceInDays, differenceInHours, differenceInMinutes } from 'date-fns';
+
+// ============================================
 // دوال التخزين المحلي
+// ============================================
+
 export const storeGet = (key, defaultValue = null) => {
   try {
     const item = localStorage.getItem(key);
     return item ? JSON.parse(item) : defaultValue;
   } catch (error) {
-    console.error('Error reading from localStorage:', error);
+    console.error(`Error reading ${key} from localStorage:`, error);
     return defaultValue;
   }
 };
@@ -14,17 +19,411 @@ export const storeSet = (key, value) => {
     localStorage.setItem(key, JSON.stringify(value));
     return true;
   } catch (error) {
-    console.error('Error writing to localStorage:', error);
+    console.error(`Error saving ${key} to localStorage:`, error);
     return false;
   }
 };
 
-export const storeRemove = (key) => {
+// ============================================
+// دوال التاريخ والوقت
+// ============================================
+
+export const formatDate = (date) => {
+  if (!date) return '';
+  const d = typeof date === 'string' ? parseISO(date) : new Date(date);
+  return format(d, 'yyyy-MM-dd');
+};
+
+export const formatTime = (date) => {
+  if (!date) return '';
+  const d = typeof date === 'string' ? parseISO(date) : new Date(date);
+  return format(d, 'HH:mm');
+};
+
+export const formatDateTime = (date) => {
+  if (!date) return '';
+  const d = typeof date === 'string' ? parseISO(date) : new Date(date);
+  return format(d, 'yyyy-MM-dd HH:mm');
+};
+
+export const getDaysInMonth = (year, month) => {
+  const start = startOfMonth(new Date(year, month - 1));
+  const end = endOfMonth(new Date(year, month - 1));
+  return eachDayOfInterval({ start, end });
+};
+
+export const getMonthName = (month, locale = 'ar-SA') => {
+  const date = new Date(2024, month - 1, 1);
+  return format(date, 'MMMM', { locale });
+};
+
+export const getWeekdayName = (date, locale = 'ar-SA') => {
+  const d = typeof date === 'string' ? parseISO(date) : new Date(date);
+  return format(d, 'EEEE', { locale });
+};
+
+export const isWeekend = (date, weekendDays = [5, 6]) => {
+  const d = typeof date === 'string' ? parseISO(date) : new Date(date);
+  return weekendDays.includes(d.getDay());
+};
+
+// ============================================
+// دوال حساب الإجازات والخصومات
+// ============================================
+
+export const calculateDailyRate = (salary) => {
+  if (!salary || salary <= 0) return 0;
+  return salary / 30;
+};
+
+export const calculateHourlyRate = (salary, dailyHours) => {
+  if (!salary || salary <= 0 || !dailyHours || dailyHours <= 0) return 0;
+  return calculateDailyRate(salary) / dailyHours;
+};
+
+export const calculateMinuteRate = (salary, dailyHours) => {
+  if (!salary || salary <= 0 || !dailyHours || dailyHours <= 0) return 0;
+  return calculateHourlyRate(salary, dailyHours) / 60;
+};
+
+export const calculateDeduction = (type, value, salary, dailyHours) => {
+  switch (type) {
+    case 'minutes':
+      return value * calculateMinuteRate(salary, dailyHours);
+    case 'hours':
+      return value * calculateHourlyRate(salary, dailyHours);
+    case 'days':
+      return value * calculateDailyRate(salary);
+    default:
+      return 0;
+  }
+};
+
+export const calculateLeaveDuration = (startDate, endDate) => {
+  if (!startDate || !endDate) return 0;
+  const start = typeof startDate === 'string' ? parseISO(startDate) : new Date(startDate);
+  const end = typeof endDate === 'string' ? parseISO(endDate) : new Date(endDate);
+  const days = differenceInDays(end, start) + 1;
+  return Math.max(0, days);
+};
+
+export const calculateTimeDifference = (startTime, endTime) => {
+  if (!startTime || !endTime) return { hours: 0, minutes: 0 };
+  
+  const start = typeof startTime === 'string' ? parseISO(`2024-01-01T${startTime}`) : new Date(startTime);
+  const end = typeof endTime === 'string' ? parseISO(`2024-01-01T${endTime}`) : new Date(endTime);
+  
+  const totalMinutes = differenceInMinutes(end, start);
+  const hours = Math.floor(Math.abs(totalMinutes) / 60);
+  const minutes = Math.abs(totalMinutes) % 60;
+  
+  return { hours, minutes, totalMinutes: Math.abs(totalMinutes) };
+};
+
+// ============================================
+// دوال التحقق من التداخل
+// ============================================
+
+export const checkLeaveOverlap = (startDate, endDate, leaves, excludeId = null) => {
+  const start = typeof startDate === 'string' ? parseISO(startDate) : new Date(startDate);
+  const end = typeof endDate === 'string' ? parseISO(endDate) : new Date(endDate);
+  
+  for (const leave of leaves) {
+    if (leave.id === excludeId) continue;
+    
+    const leaveStart = typeof leave.startDate === 'string' ? parseISO(leave.startDate) : new Date(leave.startDate);
+    const leaveEnd = typeof leave.endDate === 'string' ? parseISO(leave.endDate) : new Date(leave.endDate);
+    
+    // تحقق من التداخل
+    if (start <= leaveEnd && end >= leaveStart) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
+export const checkLeaveOnDate = (date, leaves) => {
+  const checkDate = typeof date === 'string' ? parseISO(date) : new Date(date);
+  
+  for (const leave of leaves) {
+    const leaveStart = typeof leave.startDate === 'string' ? parseISO(leave.startDate) : new Date(leave.startDate);
+    const leaveEnd = typeof leave.endDate === 'string' ? parseISO(leave.endDate) : new Date(leave.endDate);
+    
+    if (checkDate >= leaveStart && checkDate <= leaveEnd) {
+      return true;
+    }
+  }
+  
+  return false;
+};
+
+// ============================================
+// دوال رصيد الإجازات
+// ============================================
+
+export const calculateAccruedLeave = (currentMonth, settings, balanceHistory) => {
+  const { monthlyLeave = 2.5, calculationMethod = 'current' } = settings;
+  
+  if (calculationMethod === 'full') {
+    return monthlyLeave * 12;
+  }
+  
+  // حتى الشهر الحالي
+  return monthlyLeave * (currentMonth + 1);
+};
+
+export const calculateCarryOver = (remainingBalance, policy, maxDays = 0) => {
+  switch (policy) {
+    case 'full':
+      return remainingBalance;
+    case 'max30':
+      return Math.min(remainingBalance, 30);
+    case 'max15':
+      return Math.min(remainingBalance, 15);
+    case 'none':
+      return 0;
+    case 'custom':
+      return Math.min(remainingBalance, maxDays);
+    default:
+      return remainingBalance;
+  }
+};
+
+export const calculateConsumedLeave = (leaves, leaveTypes) => {
+  let totalDays = 0;
+  
+  for (const leave of leaves) {
+    const leaveType = leaveTypes.find(t => t.id === leave.typeId);
+    if (leaveType && leaveType.deductFromBalance) {
+      const duration = calculateLeaveDuration(leave.startDate, leave.endDate);
+      totalDays += duration;
+    }
+  }
+  
+  return totalDays;
+};
+
+export const calculateTimeOffInDays = (timeOffRecords, dailyHours) => {
+  if (!dailyHours || dailyHours <= 0) return 0;
+  
+  let totalHours = 0;
+  
+  for (const record of timeOffRecords) {
+    if (record.hours) {
+      totalHours += parseFloat(record.hours) || 0;
+    } else if (record.timeValue) {
+      const [h, m] = record.timeValue.split(':').map(Number);
+      totalHours += h + (m / 60);
+    }
+  }
+  
+  return totalHours / dailyHours;
+};
+
+// ============================================
+// أنواع الإجازات الافتراضية
+// ============================================
+
+export const defaultLeaveTypes = [
+  { id: 'annual', name: 'إجازة سنوية', deductFromBalance: true, color: '#7C3AED' },
+  { id: 'unpaid', name: 'بدون راتب', deductFromBalance: true, color: '#EF4444' },
+  { id: 'rest', name: 'راحة بالخصم', deductFromBalance: true, color: '#F59E0B' },
+  { id: 'emergency', name: 'إجازة طارئة', deductFromBalance: false, color: '#10B981' },
+  { id: 'sick', name: 'إجازة مرضية', deductFromBalance: false, color: '#3B82F6' },
+  { id: 'mission', name: 'مهمة عمل', deductFromBalance: false, color: '#8B5CF6' },
+  { id: 'official', name: 'عطلة رسمية', deductFromBalance: false, color: '#6B7280' },
+  { id: 'marriage', name: 'إجازة زواج', deductFromBalance: false, color: '#EC4899' },
+  { id: 'paternity', name: 'إجازة مولود', deductFromBalance: false, color: '#14B8A6' },
+  { id: 'bereavement', name: 'إجازة وفاة', deductFromBalance: false, color: '#6366F1' },
+];
+
+// ============================================
+// دوال التصدير
+// ============================================
+
+export const exportToExcel = async (data, filename) => {
   try {
-    localStorage.removeItem(key);
+    const XLSX = await import('xlsx');
+    const wb = XLSX.utils.book_new();
+    
+    // ورقة الإجازات
+    if (data.leaves && data.leaves.length > 0) {
+      const leavesData = data.leaves.map(l => ({
+        'المعرف': l.id,
+        'العنوان': l.title,
+        'النوع': l.typeName,
+        'تاريخ البداية': formatDate(l.startDate),
+        'تاريخ النهاية': formatDate(l.endDate),
+        'المدة (أيام)': calculateLeaveDuration(l.startDate, l.endDate),
+        'ملاحظات': l.notes || ''
+      }));
+      const wsLeaves = XLSX.utils.json_to_sheet(leavesData);
+      XLSX.utils.book_append_sheet(wb, wsLeaves, 'الإجازات');
+    }
+    
+    // ورقة إذن الانصراف
+    if (data.earlyLeaves && data.earlyLeaves.length > 0) {
+      const earlyLeavesData = data.earlyLeaves.map(l => ({
+        'المعرف': l.id,
+        'العنوان': l.title,
+        'التاريخ': formatDate(l.date),
+        'الوقت': l.timeValue,
+        'المدة (ساعات)': l.hours || 0,
+        'ملاحظات': l.notes || ''
+      }));
+      const wsEarly = XLSX.utils.json_to_sheet(earlyLeavesData);
+      XLSX.utils.book_append_sheet(wb, wsEarly, 'إذن الانصراف');
+    }
+    
+    // ورقة إذن التأخير
+    if (data.lateArrivals && data.lateArrivals.length > 0) {
+      const lateData = data.lateArrivals.map(l => ({
+        'المعرف': l.id,
+        'العنوان': l.title,
+        'التاريخ': formatDate(l.date),
+        'الوقت': l.timeValue,
+        'المدة (ساعات)': l.hours || 0,
+        'ملاحظات': l.notes || ''
+      }));
+      const wsLate = XLSX.utils.json_to_sheet(lateData);
+      XLSX.utils.book_append_sheet(wb, wsLate, 'إذن التأخير');
+    }
+    
+    // ورقة الملخص
+    if (data.summary) {
+      const summaryData = [
+        ['الإحصائية', 'القيمة'],
+        ['إجمالي الإجازات المستهلكة', data.summary.totalLeaveDays],
+        ['إجمالي إذن الانصراف (ساعات)', data.summary.totalEarlyHours],
+        ['إجمالي إذن التأخير (ساعات)', data.summary.totalLateHours],
+        ['الحصيلة النهائية (أيام)', data.summary.netDays],
+        ['الخصم من الراتب', data.summary.deductionAmount]
+      ];
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'الملخص');
+    }
+    
+    XLSX.writeFile(wb, `${filename}.xlsx`);
     return true;
   } catch (error) {
-    console.error('Error removing from localStorage:', error);
+    console.error('Error exporting to Excel:', error);
+    return false;
+  }
+};
+
+export const exportToPDF = async (data, filename) => {
+  try {
+    const jsPDF = (await import('jspdf')).default;
+    const autoTable = (await import('jspdf-autotable')).default;
+    
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    // العنوان
+    doc.setFontSize(18);
+    doc.text('Taqreer Ijazati', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.text(`Date: ${format(new Date(), 'yyyy-MM-dd')}`, 105, 30, { align: 'center' });
+    
+    // جدول الإجازات
+    if (data.leaves && data.leaves.length > 0) {
+      doc.setFontSize(14);
+      doc.text('Leaves', 14, 45);
+      
+      const tableData = data.leaves.map(l => [
+        l.title,
+        l.typeName,
+        formatDate(l.startDate),
+        formatDate(l.endDate),
+        calculateLeaveDuration(l.startDate, l.endDate).toString(),
+        l.notes || '-'
+      ]);
+      
+      autoTable(doc, {
+        startY: 50,
+        head: [['Title', 'Type', 'Start', 'End', 'Duration', 'Notes']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [124, 58, 237] }
+      });
+    }
+    
+    // جدول الانصراف
+    if (data.earlyLeaves && data.earlyLeaves.length > 0) {
+      doc.setFontSize(14);
+      doc.text('Early Leaves', 14, doc.lastAutoTable.finalY + 15);
+      
+      const tableData = data.earlyLeaves.map(l => [
+        l.title,
+        formatDate(l.date),
+        l.timeValue,
+        (l.hours || 0).toString(),
+        l.notes || '-'
+      ]);
+      
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 20,
+        head: [['Title', 'Date', 'Time', 'Duration', 'Notes']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246] }
+      });
+    }
+    
+    // جدول التأخير
+    if (data.lateArrivals && data.lateArrivals.length > 0) {
+      doc.setFontSize(14);
+      doc.text('Late Arrivals', 14, doc.lastAutoTable.finalY + 15);
+      
+      const tableData = data.lateArrivals.map(l => [
+        l.title,
+        formatDate(l.date),
+        l.timeValue,
+        (l.hours || 0).toString(),
+        l.notes || '-'
+      ]);
+      
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 20,
+        head: [['Title', 'Date', 'Time', 'Duration', 'Notes']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [245, 158, 11] }
+      });
+    }
+    
+    // الملخص
+    if (data.summary) {
+      doc.setFontSize(14);
+      doc.text('Summary', 14, doc.lastAutoTable.finalY + 15);
+      
+      const summaryData = [
+        ['Total Leave Days', data.summary.totalLeaveDays.toString()],
+        ['Total Early Hours', `${data.summary.totalEarlyHours} hrs (${data.summary.totalEarlyCount} times)`],
+        ['Total Late Hours', `${data.summary.totalLateHours} hrs (${data.summary.totalLateCount} times)`],
+        ['Net Days', data.summary.netDays.toString()],
+        ['Deduction Amount', `${data.summary.deductionAmount.toFixed(2)} ${data.currency || 'SAR'}`]
+      ];
+      
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 20,
+        body: summaryData,
+        theme: 'plain',
+        columnStyles: {
+          0: { fontStyle: 'bold' }
+        }
+      });
+    }
+    
+    doc.save(`${filename}.pdf`);
+    return true;
+  } catch (error) {
+    console.error('Error exporting to PDF:', error);
     return false;
   }
 };
@@ -33,156 +432,3 @@ export const storeRemove = (key) => {
 export const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
-
-// تنسيق التاريخ
-export const formatDate = (date) => {
-  if (!date) return '';
-  const d = new Date(date);
-  return d.toLocaleDateString('ar-EG', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
-
-// تنسيق الوقت
-export const formatTime = (time) => {
-  if (!time) return '';
-  return time;
-};
-
-// حساب الفرق بين تاريخين بالأيام
-export const dateDiffInDays = (startDate, endDate) => {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const diffTime = Math.abs(end - start);
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-};
-
-// حساب ساعات العمل بين وقتين
-export const calculateWorkHours = (startTime, endTime, workSettings) => {
-  if (!startTime || !endTime) return 0;
-  
-  const start = timeToMinutes(startTime);
-  const end = timeToMinutes(endTime);
-  
-  if (workSettings.workType === 'single') {
-    // فترة واحدة
-    const workStart = timeToMinutes(workSettings.singlePeriod.start);
-    const workEnd = timeToMinutes(workSettings.singlePeriod.end);
-    
-    if (start >= workStart && end <= workEnd) {
-      return (end - start) / 60;
-    }
-    return 0;
-  } else {
-    // فترتين
-    const morningStart = timeToMinutes(workSettings.morningPeriod.start);
-    const morningEnd = timeToMinutes(workSettings.morningPeriod.end);
-    const eveningStart = timeToMinutes(workSettings.eveningPeriod.start);
-    const eveningEnd = timeToMinutes(workSettings.eveningPeriod.end);
-    
-    let hours = 0;
-    
-    // حساب الفترة الصباحية
-    if (start < morningEnd && end > morningStart) {
-      const actualStart = Math.max(start, morningStart);
-      const actualEnd = Math.min(end, morningEnd);
-      if (actualEnd > actualStart) {
-        hours += (actualEnd - actualStart) / 60;
-      }
-    }
-    
-    // حساب الفترة المسائية
-    if (start < eveningEnd && end > eveningStart) {
-      const actualStart = Math.max(start, eveningStart);
-      const actualEnd = Math.min(end, eveningEnd);
-      if (actualEnd > actualStart) {
-        hours += (actualEnd - actualStart) / 60;
-      }
-    }
-    
-    return hours;
-  }
-};
-
-// تحويل الوقت إلى دقائق
-export const timeToMinutes = (timeStr) => {
-  if (!timeStr) return 0;
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  return hours * 60 + (minutes || 0);
-};
-
-// تحويل الدقائق إلى وقت
-export const minutesToTime = (minutes) => {
-  const hrs = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-};
-
-// التحقق من أن التاريخ هو يوم إجازة أسبوعية
-export const isWeekend = (date, weekendDays) => {
-  const day = new Date(date).getDay();
-  // تحويل الأيام لتناسب النظام العربي (الأحد = 0)
-  const adjustedDay = day === 0 ? 7 : day;
-  return weekendDays.includes(adjustedDay);
-};
-
-// الحصول على اسم اليوم
-export const getDayName = (date) => {
-  const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-  return days[new Date(date).getDay()];
-};
-
-// حساب الخصم المالي
-export const calculateDeduction = (hours, salary, dailyHours) => {
-  const daySalary = salary / 30;
-  const hourSalary = daySalary / dailyHours;
-  return hours * hourSalary;
-};
-
-// تحويل الساعات إلى أيام
-export const hoursToDays = (hours, dailyHours) => {
-  return hours / dailyHours;
-};
-
-// التحقق من صحة رقم الهاتف
-export const isValidPhone = (phone) => {
-  const phoneRegex = /^[\d\s\-\+\(\)]{10,}$/;
-  return phoneRegex.test(phone);
-};
-
-// تنسيق الرقم كعملة
-export const formatCurrency = (amount, currency = 'ريال') => {
-  return `${amount.toFixed(2)} ${currency}`;
-};
-
-// تهيئة البيانات الافتراضية
-export const getDefaultSettings = () => ({
-  salary: 0,
-  currency: 'ريال',
-  dailyHours: 8,
-  workType: 'single',
-  singlePeriod: { start: '08:00', end: '16:00' },
-  morningPeriod: { start: '08:00', end: '12:00' },
-  eveningPeriod: { start: '16:00', end: '20:00' },
-  monthStart: 26,
-  monthEnd: 25,
-  compensatoryDays: 0,
-  weekendDays: [6, 7], // الجمعة والسبت
-  rolloverPolicy: 'full',
-  balanceCalculationMethod: 'current'
-});
-
-export const defaultLeaveTypes = [
-  { id: 'annual', name: 'سنوية', deductsFromBalance: true },
-  { id: 'unpaid', name: 'بدون راتب', deductsFromBalance: true },
-  { id: 'rest', name: 'راحة بالخصم', deductsFromBalance: true },
-  { id: 'emergency', name: 'طارئة', deductsFromBalance: false },
-  { id: 'sick', name: 'مرضية', deductsFromBalance: false },
-  { id: 'mission', name: 'مهمة عمل', deductsFromBalance: false },
-  { id: 'official', name: 'عطلة رسمية', deductsFromBalance: false },
-  { id: 'marriage', name: 'زواج', deductsFromBalance: false },
-  { id: 'birth', name: 'مولود', deductsFromBalance: false },
-  { id: 'death', name: 'وفاة', deductsFromBalance: false }
-];

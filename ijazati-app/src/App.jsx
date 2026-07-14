@@ -1,5 +1,23 @@
 import React from 'react';
-import { storeGet, storeSet, getDefaultSettings, defaultLeaveTypes } from './utils/helpers.js';
+import { storeGet, storeSet, defaultLeaveTypes } from './utils/helpers.js';
+
+const getDefaultSettings = () => ({
+  salary: '',
+  currency: 'SAR',
+  dailyHours: '8',
+  workType: 'single',
+  morningStart: '08:00',
+  morningEnd: '12:00',
+  afternoonStart: '16:00',
+  afternoonEnd: '20:00',
+  monthStart: 26,
+  monthEnd: 25,
+  compensatoryDays: 0,
+  weekendDays: [5, 6],
+  monthlyLeave: 2.5,
+  carryOverPolicy: 'max30',
+  calculationMethod: 'current'
+});
 
 const App = () => {
   const [currentPage, setCurrentPage] = React.useState('home');
