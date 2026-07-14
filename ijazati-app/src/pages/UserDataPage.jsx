@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { storeGet, storeSet } from '../utils/helpers';
-import { Field, Button, Card, Toast } from '../components/Common';
+import { Field, Button, Card, ToastContainer } from '../components/Common';
 
 const UserDataPage = ({ onNavigate }) => {
   const [userData, setUserData] = useState({
@@ -9,7 +9,7 @@ const UserDataPage = ({ onNavigate }) => {
     country: ''
   });
   const [isSaved, setIsSaved] = useState(false);
-  const [showToast, setShowToast] = useState(false);
+  const [showToastContainer, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {

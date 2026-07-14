@@ -3,11 +3,11 @@
 node_modules/
 
 # Build artifacts
-build/
 dist/
+build/
 *.js.map
 
-# Environment variables
+# Environment
 .env
 .env.local
 *.env.*
@@ -15,44 +15,49 @@ dist/
 # Editors
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # Logs
 *.log
 
-# Python related (if any Python files exist in project)
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.Python
+*.so
+*.egg-info/
+.eggs/
 
-# Temporary files
+# Temp files
 *.tmp
-*.swp
-*.swo
-
-# OS generated files
+*~
 .DS_Store
 Thumbs.db
 
-# Coverage reports
-coverage/
-htmlcov/
-*.coverage
-
 # Testing
-.mypy_cache/
-.pytest_cache/
+.nyc_output/
+coverage.xml
+*.gcda
+*.gcno
 
-# Compiled files
-*.o
-*.obj
+# Compiled and binary
 *.exe
 *.dll
 *.so
 *.a
+*.o
+*.obj
 *.out
 
-# Compressed files
+# Compressed
 *.zip
 *.gz
 *.tar
