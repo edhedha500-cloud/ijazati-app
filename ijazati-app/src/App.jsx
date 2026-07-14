@@ -1,5 +1,14 @@
 import React from 'react';
 import { storeGet, storeSet, defaultLeaveTypes } from './utils/helpers.js';
+import UserDataPage from './pages/UserDataPage';
+import SettingsPage from './pages/SettingsPage';
+import BalancePage from './pages/BalancePage';
+import LeaveFormPage from './pages/LeaveFormPage';
+import EarlyLeavePage from './pages/EarlyLeavePage';
+import LateArrivalPage from './pages/LateArrivalPage';
+import ReportsPage from './pages/ReportsPage';
+import CalculatorPage from './pages/CalculatorPage';
+import ActivityPage from './pages/ActivityPage';
 
 const getDefaultSettings = () => ({
   salary: '',
@@ -127,22 +136,116 @@ const App = () => {
       
       case 'userdata':
         return (
-          <div style={{ padding: '20px' }}>
-            <h2 style={{ marginBottom: '20px', fontSize: '20px', fontWeight: '700' }}>بياناتي</h2>
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-              <p>صفحة بيانات المستخدم</p>
-            </div>
-          </div>
+          <UserDataPage
+            userData={userData}
+            setUserData={(data) => {
+              setUserData(data);
+              saveData('userData', data);
+            }}
+            addToast={addToast}
+            addActivity={addActivity}
+            onNavigateToSettings={() => setCurrentPage('settings')}
+          />
         );
       
       case 'settings':
         return (
-          <div style={{ padding: '20px' }}>
-            <h2 style={{ marginBottom: '20px', fontSize: '20px', fontWeight: '700' }}>الإعدادات</h2>
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-              <p>صفحة الإعدادات</p>
-            </div>
-          </div>
+          <SettingsPage
+            settings={settings}
+            setSettings={(data) => {
+              setSettings(data);
+              saveData('settings', data);
+            }}
+            addToast={addToast}
+            addActivity={addActivity}
+          />
+        );
+      
+      case 'balance':
+        return (
+          <BalancePage
+            settings={settings}
+            leaves={leaves}
+            earlyLeaves={earlyLeaves}
+            lateArrivals={lateArrivals}
+            balanceData={balanceData}
+            setBalanceData={(data) => {
+              setBalanceData(data);
+              saveData('balanceData', data);
+            }}
+            addToast={addToast}
+            addActivity={addActivity}
+          />
+        );
+      
+      case 'leave':
+        return (
+          <LeaveFormPage
+            userData={userData}
+            settings={settings}
+            leaves={leaves}
+            earlyLeaves={earlyLeaves}
+            lateArrivals={lateArrivals}
+            leaveTypes={leaveTypes}
+            onSave={() => setCurrentPage('home')}
+            onCancel={() => setCurrentPage('home')}
+            addToast={addToast}
+            addActivity={addActivity}
+          />
+        );
+      
+      case 'early':
+        return (
+          <EarlyLeavePage
+            userData={userData}
+            settings={settings}
+            earlyLeaves={earlyLeaves}
+            leaves={leaves}
+            onSave={() => setCurrentPage('home')}
+            onCancel={() => setCurrentPage('home')}
+            addToast={addToast}
+            addActivity={addActivity}
+          />
+        );
+      
+      case 'late':
+        return (
+          <LateArrivalPage
+            userData={userData}
+            settings={settings}
+            lateArrivals={lateArrivals}
+            leaves={leaves}
+            onSave={() => setCurrentPage('home')}
+            onCancel={() => setCurrentPage('home')}
+            addToast={addToast}
+            addActivity={addActivity}
+          />
+        );
+      
+      case 'reports':
+        return (
+          <ReportsPage
+            userData={userData}
+            settings={settings}
+            leaves={leaves}
+            earlyLeaves={earlyLeaves}
+            lateArrivals={lateArrivals}
+            leaveTypes={leaveTypes}
+          />
+        );
+      
+      case 'calculator':
+        return (
+          <CalculatorPage
+            settings={settings}
+          />
+        );
+      
+      case 'activity':
+        return (
+          <ActivityPage
+            activities={activities}
+          />
         );
       
       default:

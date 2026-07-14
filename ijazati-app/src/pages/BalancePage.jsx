@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { storeGet, storeSet, calculateCarryOver, defaultLeaveTypes } from '../utils/helpers';
-import { Card, Button, Toast, Badge } from '../components/Common';
+import { Card, Button, ToastContainer, Badge } from '../components/Common';
 
 const BalancePage = () => {
   const [balanceData, setBalanceData] = useState({
@@ -17,7 +17,7 @@ const BalancePage = () => {
   });
   
   const [settings, setSettings] = useState(null);
-  const [showToast, setShowToast] = useState(false);
+  const [showToastContainer, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {

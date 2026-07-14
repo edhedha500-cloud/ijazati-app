@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { storeGet, storeSet } from '../utils/helpers';
-import { Field, Button, Card, Toast, Row } from '../components/Common';
+import { Field, Button, Card, ToastContainer, Row } from '../components/Common';
 
 const SettingsPage = () => {
   const [settings, setSettings] = useState({
@@ -21,7 +21,7 @@ const SettingsPage = () => {
     calculationMethod: 'current'
   });
   
-  const [showToast, setShowToast] = useState(false);
+  const [showToastContainer, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {

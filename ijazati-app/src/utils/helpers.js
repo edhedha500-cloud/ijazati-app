@@ -67,6 +67,93 @@ export const isWeekend = (date, weekendDays = [5, 6]) => {
   return weekendDays.includes(d.getDay());
 };
 
+export const isWeekendDay = (dayIndex, weekendDays = [5, 6]) => {
+  return weekendDays.includes(dayIndex);
+};
+
+export const hasLeaveOnDate = (date, leaves) => {
+  if (!date || !leaves || leaves.length === 0) return false;
+  const checkDate = new Date(date);
+  return leaves.some(leave => {
+    const start = new Date(leave.startDate);
+    const end = new Date(leave.endDate);
+    return checkDate >= start && checkDate <= end;
+  });
+};
+
+export const validateLeaveOverlap = (startDate, endDate, leaves, excludeId = null) => {
+  if (!startDate || !endDate || !leaves) return false;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  return leaves.some(leave => {
+    if (excludeId && leave.id === excludeId) return false;
+    const leaveStart = new Date(leave.startDate);
+    const leaveEnd = new Date(leave.endDate);
+    
+    return (start <= leaveEnd && end >= leaveStart);
+  });
+};
+
+export const calculateEarlyLeaveHours = (time, settings) => {
+  if (!time || !settings) return 0;
+  
+  const workType = settings.workType || 'single';
+  const timeParts = time.split(':');
+  const timeMinutes = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+  
+  if (workType === 'single') {
+    const endParts = (settings.morningEnd || '17:00').split(':');
+    const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+    const diffMinutes = Math.max(0, endMinutes - timeMinutes);
+    return diffMinutes / 60;
+  } else {
+    const morningEndParts = (settings.morningEnd || '12:00').split(':');
+    const morningEndMinutes = parseInt(morningEndParts[0]) * 60 + parseInt(morningEndParts[1]);
+    const afternoonEndParts = (settings.afternoonEnd || '20:00').split(':');
+    const afternoonEndMinutes = parseInt(afternoonEndParts[0]) * 60 + parseInt(afternoonEndParts[1]);
+    
+    if (timeMinutes <= morningEndMinutes) {
+      const diffMinutes = Math.max(0, morningEndMinutes - timeMinutes);
+      const afternoonHours = (afternoonEndMinutes - parseInt(settings.afternoonStart?.split(':')[0] || '16') * 60) / 60;
+      return diffMinutes / 60 + afternoonHours;
+    } else {
+      const diffMinutes = Math.max(0, afternoonEndMinutes - timeMinutes);
+      return diffMinutes / 60;
+    }
+  }
+};
+
+export const calculateLateArrivalHours = (time, settings) => {
+  if (!time || !settings) return 0;
+  
+  const workType = settings.workType || 'single';
+  const timeParts = time.split(':');
+  const timeMinutes = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+  
+  if (workType === 'single') {
+    const startParts = (settings.morningStart || '08:00').split(':');
+    const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+    const diffMinutes = Math.max(0, timeMinutes - startMinutes);
+    return diffMinutes / 60;
+  } else {
+    const morningStartParts = (settings.morningStart || '08:00').split(':');
+    const morningStartMinutes = parseInt(morningStartParts[0]) * 60 + parseInt(morningStartParts[1]);
+    const afternoonStartParts = (settings.afternoonStart || '16:00').split(':');
+    const afternoonStartMinutes = parseInt(afternoonStartParts[0]) * 60 + parseInt(afternoonStartParts[1]);
+    
+    if (timeMinutes <= morningStartMinutes) {
+      return 0;
+    } else if (timeMinutes <= afternoonStartMinutes) {
+      const diffMinutes = Math.max(0, timeMinutes - morningStartMinutes);
+      return diffMinutes / 60;
+    } else {
+      const diffMinutes = Math.max(0, timeMinutes - afternoonStartMinutes);
+      return diffMinutes / 60;
+    }
+  }
+};
+
 // ============================================
 // دوال حساب الإجازات والخصومات
 // ============================================
